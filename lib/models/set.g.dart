@@ -34,7 +34,7 @@ const SetSchema = CollectionSchema(
       id: 8738516535820705102,
       name: r'plots',
       target: r'Plot',
-      single: true,
+      single: false,
     )
   },
   embeddedSchemas: {},
@@ -308,9 +308,51 @@ extension SetQueryLinks on QueryBuilder<Set, Set, QFilterCondition> {
     });
   }
 
-  QueryBuilder<Set, Set, QAfterFilterCondition> plotsIsNull() {
+  QueryBuilder<Set, Set, QAfterFilterCondition> plotsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'plots', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<Set, Set, QAfterFilterCondition> plotsIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.linkLength(r'plots', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<Set, Set, QAfterFilterCondition> plotsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'plots', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<Set, Set, QAfterFilterCondition> plotsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'plots', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<Set, Set, QAfterFilterCondition> plotsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'plots', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<Set, Set, QAfterFilterCondition> plotsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(
+          r'plots', lower, includeLower, upper, includeUpper);
     });
   }
 }

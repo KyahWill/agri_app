@@ -1,11 +1,13 @@
 import 'dart:io';
 
 import 'package:camera/camera.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:tflite_flutter_helper/tflite_flutter_helper.dart';
-
+import 'package:agri_app/Database.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'dart:async';
 
@@ -18,13 +20,14 @@ class CameraPage extends StatefulWidget {
 }
 
 class _CameraPageState extends State<CameraPage>{
-
-   late CameraController cameraController = CameraController(
+  final service = IsarService();
+  late CameraController cameraController = CameraController(
     widget.cameras[0],
     ResolutionPreset.medium,
     enableAudio: false,
      
   );
+   String text = "WAITING TO START";
   late TextEditingController delayController = TextEditingController();
   late TextEditingController startDelayController = TextEditingController();
   late TextEditingController plotNumberController = TextEditingController();
@@ -33,6 +36,7 @@ class _CameraPageState extends State<CameraPage>{
   Future<List<CameraDescription>> getCamera() async{
     return availableCameras();
   }
+  final picker = ImagePicker();
 
 // Get a specific camera from the list of available cameras.
 
@@ -51,9 +55,18 @@ class _CameraPageState extends State<CameraPage>{
 
     try {
       final image = await cameraController.takePicture();
+      final tensor = TensorImage.fromFile(File(image.path));
+      print("TENSOR");
+      print(tensor.dataType);
       await GallerySaver.saveImage(image.path);
       // final imageFile = await XFile('image.jpg').readAsBytes();
-      final tensor = TensorImage.fromFile(File(image!.path));
+
+      var output = List.filled(1*3, 0).reshape([1,3]);
+
+      interpreter!.run(image,
+          output);
+
+      print(output);
 
       // Pass the tensor to the interpreter.
       // final outputBuffer = TensorBuffer.createFixedSize(
@@ -81,6 +94,7 @@ class _CameraPageState extends State<CameraPage>{
 
 
       setState(() {
+        text = "";
       });
 
     } catch (e) {
@@ -88,20 +102,36 @@ class _CameraPageState extends State<CameraPage>{
     }
 
   }
-  void takePictures() {
+  void takePictures() async {
     var plotNumber = int.parse(plotNumberController.text);
-    var startDelay = int.parse(startDelayController.text);
     var delay = int.parse(delayController.text);
     var counter = 0;
-
-    timer = Timer.periodic(Duration(seconds:delay), (Timer t) {
-      if(counter >= plotNumber){
+    setState((){text = "starting now";});
+    service.setSets();
+    /*
+    * timer.periodic = 1
+    * cancel timer on delay * plotnumber
+    * time left = delay - (counter % delay)
+    * */
+    var totalDelay = plotNumber * delay;
+    timer = Timer.periodic(const Duration(seconds:1), (Timer t) async {
+      var timeLeft = delay - (counter % delay);
+      setState((){
+        text="$timeLeft seconds left";
+      });
+      if(counter >= totalDelay){
         t.cancel();
-      }else{
-        takePicture();
-        counter+=1;
+        setState((){
+          text="DONE";
+        });
+        context.go('/results');
       }
-
+      if(counter % delay == 0){
+        takePicture();
+        String address = (await picker.pickImage(source: ImageSource.gallery))!.path;
+        service.setPlot(address);
+      }
+      counter+=1;
     });
   }
   @override
@@ -142,10 +172,21 @@ class _CameraPageState extends State<CameraPage>{
               width:double.infinity,
               height:30,
             ),
+            ElevatedButton(
+              onPressed: () => context.go("/"),
+              child: const Text("Go to home page"),
+            ),
+            const SizedBox(
+              width:double.infinity,
+              height:30,
+            ),
             SizedBox(
               width:double.infinity,
               height:500,
-              child:Padding(padding: EdgeInsets.all(16),child:CameraPreview(cameraController)),
+              child:Padding(
+                  padding: const EdgeInsets.all(16),
+                  child:CameraPreview(cameraController)
+              ),
             ),
 
             SizedBox(
@@ -153,11 +194,10 @@ class _CameraPageState extends State<CameraPage>{
               height:150,
               child:Row(
                 children:[
-                  Container(
-                    child:TextButton(
-                      onPressed: () => {takePictures()},
-                      child:Text("START")
-                    )
+                  TextButton(
+                      onPressed: ()=>takePictures(),
+                      child:const Text("START")
+
                   ),
                   Column(
                     children: [
@@ -170,21 +210,10 @@ class _CameraPageState extends State<CameraPage>{
                             keyboardType: TextInputType.number,
                             ),
                           ),
-                          Text("Delay"),
+                          const Text("Delay"),
                         ]
                       ),
-                      Row(
-                          children:[
-                            SizedBox(
-                             width:50,
-                             child:TextField(
-                               controller: startDelayController,
-                               keyboardType: TextInputType.number,
-                             ),
-                            ),
-                            Text("Start Time"),
-                          ]
-                      ),
+
                       Row(
                           children:[
                             SizedBox(
@@ -194,9 +223,10 @@ class _CameraPageState extends State<CameraPage>{
                                 keyboardType: TextInputType.number,
                               ),
                             ),
-                            Text("Plot Number"),
+                            const Text("Plot Number"),
                           ]
                       ),
+                      Text(text),
                     ]
                   )
                 ]
@@ -208,6 +238,5 @@ class _CameraPageState extends State<CameraPage>{
     }else {
       return Text("Error with setting up camera");
     }
-    return const Placeholder();
   }
 }

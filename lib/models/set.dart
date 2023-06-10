@@ -7,6 +7,6 @@ part 'set.g.dart';
 class Set {
   Id id = Isar.autoIncrement;
   DateTime? dateCreated;
-  final plots = IsarLink<Plot>();
+  final plots = IsarLinks<Plot>();
 }
 

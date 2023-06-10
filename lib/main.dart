@@ -1,8 +1,10 @@
 import 'package:agri_app/routes/Camera.dart';
+import 'package:agri_app/routes/History.dart';
 import 'package:agri_app/routes/Instruction.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:agri_app/routes/Home.dart';
+import 'package:agri_app/routes/Results.dart';
 import 'package:camera/camera.dart';
 
 List<CameraDescription> cameras = [];
@@ -32,7 +34,7 @@ class MyApp extends StatelessWidget {
           ),
           GoRoute(
             path: '/results',
-            builder: (context, state) => HomePage(),
+            builder: (context, state) => ResultPage(),
           ),
           GoRoute(
             path: '/instruction',
@@ -40,7 +42,7 @@ class MyApp extends StatelessWidget {
           ),
           GoRoute(
             path: '/history',
-            builder: (context, state) => HomePage(),
+            builder: (context, state) => HistoryPage(),
           ),
           GoRoute(
             path: '/about',
